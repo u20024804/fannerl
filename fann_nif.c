@@ -122,11 +122,86 @@ static ERL_NIF_TERM get_mse_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
   return result;
 }
 
+static ERL_NIF_TERM save_nif(ErlNifEnv* env, int argc, 
+			     const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  char * file_name;
+  unsigned int string_length; 
+  
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_list_length(env, argv[1], &string_length)){
+    return enif_make_badarg(env);
+  }
+  file_name = malloc((string_length+1)*sizeof(char));
+  enif_get_string(env, argv[1], file_name, string_length+1, ERL_NIF_LATIN1);
+  fann_save(resource->ann, file_name);
+  enif_release_resource(resource);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM destroy_nif(ErlNifEnv* env, int argc, 
+			     const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+    
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+    
+  fann_destroy(resource->ann);
+  enif_release_resource(resource);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM set_activation_function_hidden_nif(ErlNifEnv* env, 
+						       int argc, 
+						       const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  unsigned int activation_function;
+  ERL_NIF_TERM result;
+    
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_uint(env, argv[1], &activation_function)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_activation_function_hidden(resource->ann, activation_function);
+  result = enif_make_resource(env, (void *)resource);
+  enif_release_resource(resource);
+  return result;
+}
+
+static ERL_NIF_TERM set_activation_function_output_nif(ErlNifEnv* env, 
+						       int argc, 
+						       const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  unsigned int activation_function;
+  ERL_NIF_TERM result;
+    
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_uint(env, argv[1], &activation_function)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_activation_function_output(resource->ann, activation_function);
+  result = enif_make_resource(env, (void *)resource);
+  enif_release_resource(resource);
+  return result;
+}
+
+
 static ErlNifFunc nif_funcs[] =
 {
   {"create_standard", 1, create_standard_nif},
   {"train_on_file", 5, train_on_file_nif},
-  {"get_mse", 1, get_mse_nif}
+  {"get_mse", 1, get_mse_nif},
+  {"save", 2, save_nif},
+  {"destroy", 1, destroy_nif},
+  {"set_activation_function_hidden", 2, set_activation_function_hidden_nif},
+  {"set_activation_function_output", 2, set_activation_function_output_nif}
 };
 
 ERL_NIF_INIT(fann,nif_funcs,load,NULL,NULL,NULL)
