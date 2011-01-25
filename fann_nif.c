@@ -93,18 +93,20 @@ static ERL_NIF_TERM train_on_file_nif(ErlNifEnv* env, int argc,
   file_name = malloc((string_length+1)*sizeof(char));
   enif_get_string(env, argv[1], file_name, string_length+1, ERL_NIF_LATIN1);
   if(!enif_get_uint(env, argv[2], &max_epochs)) {
+    free(file_name);
     return enif_make_badarg(env);
   }
   if(!enif_get_uint(env, argv[3], &epochs_between_reports)) {
+    free(file_name);
     return enif_make_badarg(env);
   }
   if(!enif_get_double(env, argv[4], &desired_error)) {
+    free(file_name);
     return enif_make_badarg(env);
   }
   fann_train_on_file(resource->ann, file_name, max_epochs, 
 		     epochs_between_reports, desired_error);
-  result = enif_make_resource(env, (void *)resource);
-  enif_release_resource(resource);
+  free(file_name);
   return result;
 }
 
@@ -118,7 +120,6 @@ static ERL_NIF_TERM get_mse_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
   }
   mse = fann_get_MSE(resource->ann);
   result = enif_make_double(env, mse);
-  enif_release_resource(resource);
   return result;
 }
 
@@ -127,6 +128,7 @@ static ERL_NIF_TERM save_nif(ErlNifEnv* env, int argc,
   struct fann_resource * resource;
   char * file_name;
   unsigned int string_length; 
+  ERL_NIF_TERM result;
   
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
@@ -137,7 +139,7 @@ static ERL_NIF_TERM save_nif(ErlNifEnv* env, int argc,
   file_name = malloc((string_length+1)*sizeof(char));
   enif_get_string(env, argv[1], file_name, string_length+1, ERL_NIF_LATIN1);
   fann_save(resource->ann, file_name);
-  enif_release_resource(resource);
+  free(file_name);
   return enif_make_atom(env, "ok");
 }
 
@@ -148,7 +150,6 @@ static ERL_NIF_TERM destroy_nif(ErlNifEnv* env, int argc,
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
-    
   fann_destroy(resource->ann);
   enif_release_resource(resource);
   return enif_make_atom(env, "ok");
@@ -168,9 +169,7 @@ static ERL_NIF_TERM set_activation_function_hidden_nif(ErlNifEnv* env,
     return enif_make_badarg(env);
   }
   fann_set_activation_function_hidden(resource->ann, activation_function);
-  result = enif_make_resource(env, (void *)resource);
-  enif_release_resource(resource);
-  return result;
+  return enif_make_atom(env, "ok");
 }
 
 static ERL_NIF_TERM set_activation_function_output_nif(ErlNifEnv* env, 
@@ -188,8 +187,7 @@ static ERL_NIF_TERM set_activation_function_output_nif(ErlNifEnv* env,
   }
   fann_set_activation_function_output(resource->ann, activation_function);
   result = enif_make_resource(env, (void *)resource);
-  enif_release_resource(resource);
-  return result;
+  return enif_make_atom(env, "ok");
 }
 
 
