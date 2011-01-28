@@ -360,6 +360,60 @@ static ERL_NIF_TERM run_nif(ErlNifEnv* env,
   return enif_make_badarg(env);
 }
 
+static ERL_NIF_TERM test_nif(ErlNifEnv* env, 
+			    int argc, 
+			    const ERL_NIF_TERM argv[]) {
+  const ERL_NIF_TERM * tuple_array;
+  fann_type * converted_input, * converted_output;
+  struct fann_resource * resource;
+  int tuple_size;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_tuple(env, argv[1], &tuple_size, &tuple_array)) {
+    return enif_make_badarg(env);
+  }
+  converted_input = malloc(tuple_size*sizeof(fann_type));
+  if(!check_and_convert_fann_type_array(env, tuple_array, tuple_size, 
+				       converted_input)) {
+    free(converted_input);
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_tuple(env, argv[2], &tuple_size, &tuple_array)) {
+    free(converted_input);
+    return enif_make_badarg(env);
+  }
+  converted_output = malloc(tuple_size*sizeof(fann_type));
+  if(!check_and_convert_fann_type_array(env, tuple_array, tuple_size, 
+				       converted_output)) {
+    free(converted_input);
+    free(converted_output);
+    return enif_make_badarg(env);
+  }
+  fann_test(resource->ann, converted_input, converted_output);
+  free(converted_input);
+  free(converted_output);
+  return enif_make_atom(env, "ok");  
+}
+
+static ERL_NIF_TERM randomize_weights_nif(ErlNifEnv* env, 
+					  int argc, 
+					  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double min, max;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &min)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[2], &max)) {
+    return enif_make_badarg(env);
+  }
+  fann_randomize_weights(resource->ann, (fann_type)min, (fann_type)max);
+  return enif_make_atom(env, "ok");
+}
+
 static ERL_NIF_TERM train_on_data_nif(ErlNifEnv* env, 
 				      int argc, 
 				      const ERL_NIF_TERM argv[]) {
@@ -521,6 +575,8 @@ static ErlNifFunc nif_funcs[] =
   {"print_parameters", 1, print_parameters_nif},
   {"print_connections", 1, print_connections_nif},
   {"run", 2, run_nif},
+  {"test", 3, test_nif},
+  {"randomize_weights", 3, randomize_weights_nif},
   {"train_on_data", 5, train_on_data_nif}
 };
 
