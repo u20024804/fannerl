@@ -839,6 +839,33 @@ static ERL_NIF_TERM save_train_nif(ErlNifEnv* env, int argc,
   return enif_make_atom(env, "ok");
 }
 
+static ERL_NIF_TERM get_training_algorithm_nif(ErlNifEnv* env, 
+					       int argc, 
+					       const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  int algo;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  algo = fann_get_training_algorithm(resource->ann);
+  return enif_make_string(env, FANN_TRAIN_NAMES[algo], ERL_NIF_LATIN1);
+}
+
+static ERL_NIF_TERM set_training_algorithm_nif(ErlNifEnv* env, 
+					       int argc, 
+					       const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  int algo;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_int(env, argv[1], &algo)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_training_algorithm(resource->ann, algo);
+  return enif_make_atom(env, "ok");
+}  
+
 static void * thread_run_fann_train_on_data(void * input_thread_data){
   ErlNifEnv * this_env;
   struct train_data_thread_data * thread_data;
@@ -977,7 +1004,9 @@ static ErlNifFunc nif_funcs[] =
   {"subset_train_data", 3, subset_train_data_nif},
   {"num_input_train_data", 1, num_input_train_data_nif},
   {"num_output_train_data", 1, num_output_train_data_nif},
-  {"save_train", 2, save_train_nif}
+  {"save_train", 2, save_train_nif},
+  {"get_training_algorithm", 1, get_training_algorithm_nif},
+  {"set_training_algorithm", 2, set_training_algorithm_nif}
 };
 
 ERL_NIF_INIT(fann,nif_funcs,load,NULL,NULL,NULL)

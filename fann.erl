@@ -9,7 +9,7 @@
 	 set_scaling_params/6, clear_scaling_params/1, scale_input_train_data/3,
 	 scale_output_train_data/3, scale_train_data/3, merge_train_data/2,
 	 subset_train_data/3, num_input_train_data/1, num_output_train_data/1,
-	 save_train/2]).
+	 save_train/2, get_training_algorithm/1, set_training_algorithm/2]).
 
 -on_load(init/0).
 
@@ -105,3 +105,8 @@ num_output_train_data(_) ->
 save_train(_,_) ->
     exit(nif_library_not_loaded).
 
+get_training_algorithm(_) ->
+    exit(nif_library_not_loaded).
+
+set_training_algorithm(_,_) ->
+    exit(nif_library_not_loaded).
