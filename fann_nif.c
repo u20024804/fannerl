@@ -460,6 +460,7 @@ static ERL_NIF_TERM train_on_data_nif(ErlNifEnv* env,
   struct fann_train_data * train_data;
   struct train_data_thread * thread_tid;
   struct train_data_thread_data * thread_data;
+  struct train_data_resource train_data_resource;
   ErlNifPid self;
   unsigned int train_length, num_inputs, num_outputs;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
@@ -481,13 +482,18 @@ static ERL_NIF_TERM train_on_data_nif(ErlNifEnv* env,
     free(fann_array_outputs);
     return enif_make_badarg(env);
   }
-  if(!get_train_data_from_erl_input(env, argv[1], &train_length, 
+  if(get_train_data_from_erl_input(env, argv[1], &train_length, 
 				    &num_inputs, &num_outputs)) {
-    return enif_make_badarg(env);
-  }
-  
-  train_data = fann_create_train_from_callback(train_length, num_inputs, 
-					       num_outputs,create_train_data);
+    train_data = fann_create_train_from_callback(train_length, num_inputs, 
+						 num_outputs,create_train_data);
+  } else {
+    if(enif_get_resource(env, argv[1], TRAIN_DATA_RESOURCE, 
+			  (void **)&train_data_resource)) {
+      train_data = train_data_resource->train_data;
+    } else {
+      return enif_make_badarg(env);
+    }
+  }  
   // get pid of self
   enif_self(env, &self);
   // Initalize thread_tid resource so that the thread will be joined
