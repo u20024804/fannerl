@@ -909,7 +909,7 @@ static ERL_NIF_TERM set_learning_momentum_nif(ErlNifEnv* env,
 					      int argc, 
 					      const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
-  double learning_rate ;
+  double learning_momentum ;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
