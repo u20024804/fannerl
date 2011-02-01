@@ -864,7 +864,61 @@ static ERL_NIF_TERM set_training_algorithm_nif(ErlNifEnv* env,
   }
   fann_set_training_algorithm(resource->ann, algo);
   return enif_make_atom(env, "ok");
-}  
+}
+
+static ERL_NIF_TERM get_learning_rate_nif(ErlNifEnv* env, 
+					  int argc, 
+					  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  float learning_rate;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  learning_rate = fann_get_learning_rate(resource->ann);
+  return enif_make_double(env, learning_rate);
+}
+
+static ERL_NIF_TERM set_learning_rate_nif(ErlNifEnv* env, 
+					  int argc, 
+					  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double learning_rate ;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &learning_rate)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_learning_rate(resource->ann, (float)learning_rate);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_learning_momentum_nif(ErlNifEnv* env, 
+					      int argc, 
+					      const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  float learning_momentum;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  learning_momentum = fann_get_learning_momentum(resource->ann);
+  return enif_make_double(env, learning_momentum);
+}
+
+static ERL_NIF_TERM set_learning_momentum_nif(ErlNifEnv* env, 
+					      int argc, 
+					      const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double learning_rate ;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &learning_momentum)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_learning_momentum(resource->ann, (float)learning_momentum);
+  return enif_make_atom(env, "ok");
+}
 
 static void * thread_run_fann_train_on_data(void * input_thread_data){
   ErlNifEnv * this_env;
@@ -1006,7 +1060,11 @@ static ErlNifFunc nif_funcs[] =
   {"num_output_train_data", 1, num_output_train_data_nif},
   {"save_train", 2, save_train_nif},
   {"get_training_algorithm", 1, get_training_algorithm_nif},
-  {"set_training_algorithm", 2, set_training_algorithm_nif}
+  {"set_training_algorithm", 2, set_training_algorithm_nif},
+  {"get_learning_rate", 1, get_learning_rate_nif},
+  {"set_learning_rate", 2, set_learning_rate_nif},
+  {"get_learning_momentum", 1, get_learning_momentum_nif},
+  {"set_learning_momentum", 2, set_learning_momentum_nif}
 };
 
 ERL_NIF_INIT(fann,nif_funcs,load,NULL,NULL,NULL)
