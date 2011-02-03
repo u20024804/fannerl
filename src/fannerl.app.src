@@ -1,0 +1,14 @@
+{application, fannerl,
+ [
+  {description, "Erlang bindings for the C Fann library"},
+  {vsn, "1"},
+  {registered, []},
+  {modules, [fann,
+	     fannerl]},
+  {applications, [
+                  kernel,
+                  stdlib
+		 ]},
+  {mod, {fann, []}},	
+  {env, []}	   
+ ]}.

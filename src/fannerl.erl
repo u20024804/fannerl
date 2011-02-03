@@ -1,4 +1,4 @@
--module(fann).
+-module(fannerl).
 
 -export([create_standard/1, train_on_file/5, get_mse/1, save/2, destroy/1,
 	 set_activation_function_hidden/2, set_activation_function_output/2,
@@ -11,12 +11,21 @@
 	 subset_train_data/3, num_input_train_data/1, num_output_train_data/1,
 	 save_train/2, get_training_algorithm/1, set_training_algorithm/2,
 	 get_learning_rate/1, set_learning_rate/2, get_learning_momentum/1,
-	 set_learning_momentum/2]).
+	 set_learning_momentum/2, length_train_data/1, 
+	 set_activation_function_layer/3, get_activation_steepness/3,
+	 set_activation_steepness/4, set_activation_steepness_layer/3,
+	 set_activation_steepness_hidden/2, set_activation_steepness_output/2]).
 
 -on_load(init/0).
 
 init() ->
-    erlang:load_nif("./fann_nif", 0).
+    case code:where_is_file("fannerl.beam") of
+	non_existing ->
+	    fannerl_nif_library_not_loaded;
+	AbsPath ->
+	    erlang:load_nif(filename:join(filename:dirname(AbsPath), 
+					  "../priv/fannerl_nif"), 0)
+    end.
 
 create_standard(_) ->
     exit(nif_library_not_loaded).
@@ -124,3 +133,25 @@ get_learning_momentum(_) ->
 
 set_learning_momentum(_,_) ->
     exit(nif_library_not_loaded).
+
+length_train_data(_) ->
+    exit(nif_library_not_loaded).
+
+set_activation_function_layer(_,_,_) ->
+    exit(nif_library_not_loaded).
+
+get_activation_steepness(_,_,_) ->
+    exit(nif_library_not_loaded).
+
+set_activation_steepness(_,_,_,_) ->
+    exit(nif_library_not_loaded).
+
+set_activation_steepness_layer(_,_,_) ->
+    exit(nif_library_not_loaded).
+
+set_activation_steepness_hidden(_,_) ->
+    exit(nif_library_not_loaded).
+
+set_activation_steepness_output(_,_) ->
+    exit(nif_library_not_loaded).
+    

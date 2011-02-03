@@ -1,5 +1,6 @@
 #include <erl_nif.h>
 #include <fann.h>
+#include <string.h>
 
 static ErlNifResourceType * FANN_POINTER=NULL;
 static ErlNifResourceType * TRAIN_DATA_THREAD=NULL;
@@ -28,7 +29,6 @@ struct train_data_thread_data {
 
 static fann_type ** global_fann_array_inputs;
 static fann_type ** global_fann_array_outputs;
-static int global_array_set = 0;
 
 static void * thread_run_fann_train_on_data(void *);
 static int get_train_data_from_erl_input(ErlNifEnv *,
@@ -36,6 +36,7 @@ static int get_train_data_from_erl_input(ErlNifEnv *,
 					 unsigned int *,
 					 unsigned int *,
 					 unsigned int *);
+int get_activation_function(char *, int *);
 
 static void create_train_data(unsigned int num, unsigned int num_input,
 			      unsigned int num_output, fann_type * input,
@@ -56,7 +57,7 @@ int check_and_convert_uint_array(ErlNifEnv* env,
   int i;
   unsigned int array_value;
   ERL_NIF_TERM term;
-  int * point;
+  unsigned int * point;
   for(i = 0; i < tuple_size; ++i) {
     term = *(tuple_array + i);
     if(enif_get_uint(env, term, &array_value)) {
@@ -167,7 +168,7 @@ static int unload(ErlNifEnv * env, void ** priv_data) {
 static ERL_NIF_TERM create_standard_nif(ErlNifEnv* env, int argc,
 					const ERL_NIF_TERM argv[]) {
   
-  int x, ret, tuple_size;
+  int tuple_size;
   const ERL_NIF_TERM * tuple_array;
   unsigned int * converted_array;
   struct fann_resource * resource;
@@ -206,8 +207,7 @@ static ERL_NIF_TERM train_on_file_nif(ErlNifEnv* env, int argc,
   unsigned int string_length, max_epochs, epochs_between_reports;
   char * file_name;
   double desired_error;
-  ERL_NIF_TERM result;
-  
+    
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
@@ -252,8 +252,7 @@ static ERL_NIF_TERM save_nif(ErlNifEnv* env, int argc,
   struct fann_resource * resource;
   char * file_name;
   unsigned int string_length; 
-  ERL_NIF_TERM result;
-  
+    
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
@@ -285,16 +284,28 @@ static ERL_NIF_TERM set_activation_function_hidden_nif(ErlNifEnv* env,
 						       int argc, 
 						       const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
-  unsigned int activation_function;
-  ERL_NIF_TERM result;
+  int act_func; 
+  unsigned int atom_length;
+  char * activation_function;
     
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
-  if(!enif_get_uint(env, argv[1], &activation_function)) {
+  if(!enif_get_atom_length(env, argv[1], &atom_length, ERL_NIF_LATIN1)) {
     return enif_make_badarg(env);
   }
-  fann_set_activation_function_hidden(resource->ann, activation_function);
+  activation_function = malloc((atom_length+1)*sizeof(char));
+  if(!enif_get_atom(env, argv[1], activation_function, atom_length+1, 
+		    ERL_NIF_LATIN1)) {
+    free(activation_function);
+    return enif_make_badarg(env);
+  }
+  if(!get_activation_function(activation_function, &act_func)) {
+    free(activation_function);
+    return enif_make_badarg(env);
+  }
+  free(activation_function);
+  fann_set_activation_function_hidden(resource->ann, act_func);
   return enif_make_atom(env, "ok");
 }
 
@@ -302,16 +313,27 @@ static ERL_NIF_TERM set_activation_function_output_nif(ErlNifEnv* env,
 						       int argc, 
 						       const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
-  unsigned int activation_function;
-  ERL_NIF_TERM result;
+  int act_func;
+  unsigned int atom_length;
+  char * activation_function;
     
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
-  if(!enif_get_uint(env, argv[1], &activation_function)) {
+  if(!enif_get_atom_length(env, argv[1], &atom_length, ERL_NIF_LATIN1)) {
     return enif_make_badarg(env);
   }
-  fann_set_activation_function_output(resource->ann, activation_function);
+  activation_function = malloc((atom_length+1)*sizeof(char));
+  if(!enif_get_atom(env, argv[1], activation_function, atom_length+1, ERL_NIF_LATIN1)) {
+    free(activation_function);
+    return enif_make_badarg(env);
+  }
+  if(!get_activation_function(activation_function, &act_func)) {
+    free(activation_function);
+    return enif_make_badarg(env);
+  }
+  free(activation_function);
+  fann_set_activation_function_output(resource->ann, act_func);
   return enif_make_atom(env, "ok");
 }
 
@@ -320,7 +342,6 @@ static ERL_NIF_TERM get_activation_function_nif(ErlNifEnv* env,
 						const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
   unsigned int activation_function, layer, neuron;
-  ERL_NIF_TERM result;
       
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
@@ -453,46 +474,30 @@ static ERL_NIF_TERM randomize_weights_nif(ErlNifEnv* env,
 static ERL_NIF_TERM train_on_data_nif(ErlNifEnv* env, 
 				      int argc, 
 				      const ERL_NIF_TERM argv[]) {
-  fann_type ** fann_array_inputs, ** fann_array_outputs; 
   double desired_error;
   struct fann_resource * resource;  
   unsigned int max_epochs, epochs_between_reports;
-  struct fann_train_data * train_data;
   struct train_data_thread * thread_tid;
   struct train_data_thread_data * thread_data;
-  struct train_data_resource train_data_resource;
+  struct train_data_resource * train_data_resource;
   ErlNifPid self;
-  unsigned int train_length, num_inputs, num_outputs;
+  
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }  
     
   if(!enif_get_uint(env, argv[2], &max_epochs)) {
-    free(fann_array_inputs);
-    free(fann_array_outputs);
     return enif_make_badarg(env);
   }
   if(!enif_get_uint(env, argv[3], &epochs_between_reports)) {
-    free(fann_array_inputs);
-    free(fann_array_outputs);
     return enif_make_badarg(env);
   }
   if(!enif_get_double(env, argv[4], &desired_error)) {
-    free(fann_array_inputs);
-    free(fann_array_outputs);
     return enif_make_badarg(env);
   }
-  if(get_train_data_from_erl_input(env, argv[1], &train_length, 
-				    &num_inputs, &num_outputs)) {
-    train_data = fann_create_train_from_callback(train_length, num_inputs, 
-						 num_outputs,create_train_data);
-  } else {
-    if(enif_get_resource(env, argv[1], TRAIN_DATA_RESOURCE, 
+  if(!enif_get_resource(env, argv[1], TRAIN_DATA_RESOURCE, 
 			  (void **)&train_data_resource)) {
-      train_data = train_data_resource->train_data;
-    } else {
-      return enif_make_badarg(env);
-    }
+    return enif_make_badarg(env);
   }  
   // get pid of self
   enif_self(env, &self);
@@ -503,15 +508,13 @@ static ERL_NIF_TERM train_on_data_nif(ErlNifEnv* env,
   thread_data = malloc(sizeof(struct train_data_thread_data));
   // Initialize thread_data struct which will be sent to the thread
   thread_data->resource = resource;
-  thread_data->train_data = train_data;
+  thread_data->train_data = train_data_resource->train_data;
   thread_data->max_epochs = max_epochs;
   thread_data->epochs_between_reports = epochs_between_reports;
   thread_data->desired_error = desired_error;
   thread_data->to_pid = self;
   enif_thread_create("train_data_thread", &(thread_tid->tid), 
 		     thread_run_fann_train_on_data, thread_data, NULL);
-  free(global_fann_array_inputs);
-  free(global_fann_array_outputs);
   return enif_make_atom(env, "ok");
 }
 
@@ -926,6 +929,167 @@ static ERL_NIF_TERM set_learning_momentum_nif(ErlNifEnv* env,
   return enif_make_atom(env, "ok");
 }
 
+static ERL_NIF_TERM set_activation_function_nif(ErlNifEnv* env, 
+						int argc, 
+						const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  char * activation_function;
+  int act_func;
+  unsigned int atom_length, layer, neuron;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_atom_length(env, argv[1], &atom_length, ERL_NIF_LATIN1)) {
+    return enif_make_badarg(env);
+  }
+  activation_function = malloc((atom_length+1)*sizeof(char));
+  if(!enif_get_atom(env, argv[1], activation_function, atom_length+1, 
+		    ERL_NIF_LATIN1)) {
+    free(activation_function);
+    return enif_make_badarg(env);
+  }
+  if(!get_activation_function(activation_function, &act_func)) {
+    free(activation_function);
+    return enif_make_badarg(env);
+  }
+  free(activation_function);
+  if(!enif_get_uint(env, argv[2], &layer)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_uint(env, argv[2], &neuron)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_activation_function(resource->ann, act_func, layer, neuron);
+  return enif_make_atom(env, "ok");
+}
+ 
+static ERL_NIF_TERM set_activation_function_layer_nif(ErlNifEnv* env, 
+						      int argc, 
+						      const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  char * activation_function;
+  int act_func;
+  unsigned int atom_length, layer;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_atom_length(env, argv[1], &atom_length, ERL_NIF_LATIN1)) {
+    return enif_make_badarg(env);
+  }
+  activation_function = malloc((atom_length+1)*sizeof(char));
+  if(!enif_get_atom(env, argv[1], activation_function, atom_length+1, 
+		    ERL_NIF_LATIN1)) {
+    free(activation_function);
+    return enif_make_badarg(env);
+  }
+  if(!get_activation_function(activation_function, &act_func)) {
+    free(activation_function);
+    return enif_make_badarg(env);
+  }
+  free(activation_function);
+  if(!enif_get_uint(env, argv[2], &layer)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_activation_function_layer(resource->ann, act_func, layer);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_activation_steepness_nif(ErlNifEnv* env, 
+						 int argc, 
+						 const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  int layer, neuron;
+  fann_type activation_steepness;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_int(env, argv[1], &layer)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_int(env, argv[2], &neuron)) {
+    return enif_make_badarg(env);
+  }
+  activation_steepness = fann_get_activation_steepness(resource->ann, layer, 
+						       neuron);
+  return enif_make_double(env, activation_steepness);
+}
+
+static ERL_NIF_TERM set_activation_steepness_nif(ErlNifEnv* env, 
+						 int argc, 
+						 const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  int layer, neuron;
+  double activation_steepness;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &activation_steepness)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_int(env, argv[2], &layer)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_int(env, argv[3], &neuron)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_activation_steepness(resource->ann, (fann_type)activation_steepness,
+				layer, neuron);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM set_activation_steepness_layer_nif(ErlNifEnv* env, 
+						       int argc, 
+						       const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  int layer;
+  double activation_steepness;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &activation_steepness)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_int(env, argv[2], &layer)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_activation_steepness_layer(resource->ann, 
+				      (fann_type)activation_steepness,
+				      layer);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM set_activation_steepness_hidden_nif(ErlNifEnv* env, 
+							int argc, 
+							const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double activation_steepness;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &activation_steepness)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_activation_steepness_hidden(resource->ann, 
+				       (fann_type)activation_steepness);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM set_activation_steepness_output_nif(ErlNifEnv* env, 
+							int argc, 
+							const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double activation_steepness;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &activation_steepness)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_activation_steepness_output(resource->ann, 
+				       (fann_type)activation_steepness);
+  return enif_make_atom(env, "ok");
+}
+    
 static void * thread_run_fann_train_on_data(void * input_thread_data){
   ErlNifEnv * this_env;
   struct train_data_thread_data * thread_data;
@@ -935,13 +1099,12 @@ static void * thread_run_fann_train_on_data(void * input_thread_data){
 		     thread_data->max_epochs, 
 		     thread_data->epochs_between_reports, 
 		     thread_data->desired_error);
-  fann_destroy_train(thread_data->train_data);
   this_env = enif_alloc_env();
   enif_send(NULL, &(thread_data->to_pid), this_env, 
 	    enif_make_atom(this_env, "fann_train_on_data_complete"));
   free(thread_data);
   enif_free_env(this_env);
-  enif_thread_exit(NULL);
+  enif_thread_exit(NULL); 
 }
 
 static int get_train_data_from_erl_input(ErlNifEnv * env,
@@ -952,9 +1115,8 @@ static int get_train_data_from_erl_input(ErlNifEnv * env,
 {
   fann_type ** fann_array_inputs, ** fann_array_outputs;
   const ERL_NIF_TERM * tuple_array;
-  ERL_NIF_TERM list, tail, element, temp_list, temp_tail, temp_head, 
-    input_element, output_element;
-  unsigned int list_length, set_list_length, num_inputs, num_outputs;
+  ERL_NIF_TERM list, tail, element, temp_tail, temp_head;
+  unsigned int list_length, set_list_length;
   int tuple_size, i, z;
   fann_type * converted_array;
   // First check that it is a list
@@ -1032,6 +1194,60 @@ static int get_train_data_from_erl_input(ErlNifEnv * env,
   global_fann_array_outputs = fann_array_outputs;
   return 1;
 }
+
+int get_activation_function(char * activation_function, int * act_func) {
+  if(strcmp(activation_function,"fann_linear")==0) {
+    *act_func=0;
+    return 0;
+  } else if(strcmp(activation_function,"fann_threshold")==0) {
+    *act_func=1;
+    return 0;
+  } else if(strcmp(activation_function,"fann_threshold_symmetric")==0) {
+    *act_func=2;
+    return 0;
+  } else if(strcmp(activation_function,"fann_sigmoid")==0) {
+    *act_func=3;
+    return 0;
+  } else if(strcmp(activation_function,"fann_sigmoid_stepwise")==0) {
+    *act_func=4;
+    return 0;
+  } else if(strcmp(activation_function,"fann_sigmoid_symmetric")==0) {
+    *act_func=5;
+    return 0;
+  } else if(strcmp(activation_function,"fann_gaussian")==0) {
+    *act_func=6;
+    return 0;
+  } else if(strcmp(activation_function,"fann_gaussian_symmetric")==0) {
+    *act_func=7;
+    return 0;
+  } else if(strcmp(activation_function,"fann_elliot")==0) {
+    *act_func=8;
+    return 0;
+  } else if(strcmp(activation_function,"fann_elliot_symmetric")==0) {
+    *act_func=9;
+    return 0;
+  } else if(strcmp(activation_function,"fann_linear_piece")==0) {
+    *act_func=10;
+    return 0;
+  } else if(strcmp(activation_function,"fann_linear_piece_symmetric")==0) {
+    *act_func=11;
+    return 0;
+  } else if(strcmp(activation_function,"fann_sin_symmetric")==0) {
+    *act_func=12;
+    return 0;
+  } else if(strcmp(activation_function,"fann_cos_symmetric")==0) {
+    *act_func=13;
+    return 0;
+  } else if(strcmp(activation_function,"fann_sin")==0) {
+    *act_func=14;
+    return 0;
+  } else if(strcmp(activation_function,"fann_cos")==0) {
+    *act_func=15;
+    return 0;
+  } else {
+    return -1;
+  }
+}
       
 static ErlNifFunc nif_funcs[] =
 {
@@ -1043,6 +1259,7 @@ static ErlNifFunc nif_funcs[] =
   {"set_activation_function_hidden", 2, set_activation_function_hidden_nif},
   {"set_activation_function_output", 2, set_activation_function_output_nif},
   {"get_activation_function", 3, get_activation_function_nif},
+  {"set_activation_function", 4, set_activation_function_nif},
   {"print_parameters", 1, print_parameters_nif},
   {"print_connections", 1, print_connections_nif},
   {"run", 2, run_nif},
@@ -1070,7 +1287,14 @@ static ErlNifFunc nif_funcs[] =
   {"get_learning_rate", 1, get_learning_rate_nif},
   {"set_learning_rate", 2, set_learning_rate_nif},
   {"get_learning_momentum", 1, get_learning_momentum_nif},
-  {"set_learning_momentum", 2, set_learning_momentum_nif}
+  {"set_learning_momentum", 2, set_learning_momentum_nif},
+  {"length_train_data", 1, length_train_data_nif},
+  {"set_activation_function_layer", 3, set_activation_function_layer_nif},
+  {"get_activation_steepness", 3, get_activation_steepness_nif},
+  {"set_activation_steepness", 4, set_activation_steepness_nif},
+  {"set_activation_steepness_layer", 3, set_activation_steepness_layer_nif},
+  {"set_activation_steepness_hidden", 2, set_activation_steepness_hidden_nif},
+  {"set_activation_steepness_output", 2, set_activation_steepness_output_nif}
 };
 
-ERL_NIF_INIT(fann,nif_funcs,load,NULL,NULL,NULL)
+ERL_NIF_INIT(fannerl,nif_funcs,load,reload,upgrade,unload)
