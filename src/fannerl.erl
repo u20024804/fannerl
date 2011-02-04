@@ -14,7 +14,10 @@
 	 set_learning_momentum/2, length_train_data/1, 
 	 set_activation_function_layer/3, get_activation_steepness/3,
 	 set_activation_steepness/4, set_activation_steepness_layer/3,
-	 set_activation_steepness_hidden/2, set_activation_steepness_output/2]).
+	 set_activation_steepness_hidden/2, set_activation_steepness_output/2,
+	 get_train_error_function/1, set_train_error_function/2,
+	 get_train_stop_function/1, set_train_stop_function/2,
+	 get_bit_fail_limit/1, set_bit_fail_limit/2]).
 
 -on_load(init/0).
 
@@ -155,3 +158,20 @@ set_activation_steepness_hidden(_,_) ->
 set_activation_steepness_output(_,_) ->
     exit(nif_library_not_loaded).
     
+get_train_error_function(_) ->
+    exit(nif_library_not_loaded).
+
+set_train_error_function(_,_) ->
+    exit(nif_library_not_loaded).
+
+get_train_stop_function(_) ->
+    exit(nif_library_not_loaded).
+
+set_train_stop_function(_,_) ->
+    exit(nif_library_not_loaded).
+
+get_bit_fail_limit(_) ->
+    exit(nif_library_not_loaded).
+
+set_bit_fail_limit(_,_) ->
+    exit(nif_library_not_loaded).

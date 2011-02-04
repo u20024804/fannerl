@@ -1,6 +1,7 @@
 #include <erl_nif.h>
 #include <fann.h>
 #include <string.h>
+#include <ctype.h>
 
 static ErlNifResourceType * FANN_POINTER=NULL;
 static ErlNifResourceType * TRAIN_DATA_THREAD=NULL;
@@ -37,6 +38,9 @@ static int get_train_data_from_erl_input(ErlNifEnv *,
 					 unsigned int *,
 					 unsigned int *);
 int get_activation_function(char *, int *);
+int get_error_function(char *, int *);
+int get_stop_function(char *, int *);
+char * strtolower(const char *);
 
 static void create_train_data(unsigned int num, unsigned int num_input,
 			      unsigned int num_output, fann_type * input,
@@ -1089,6 +1093,113 @@ static ERL_NIF_TERM set_activation_steepness_output_nif(ErlNifEnv* env,
 				       (fann_type)activation_steepness);
   return enif_make_atom(env, "ok");
 }
+
+static ERL_NIF_TERM get_train_error_function_nif(ErlNifEnv* env, 
+						 int argc, 
+						 const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  int train_error_func;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  train_error_func = fann_get_train_error_function(resource->ann);
+  return enif_make_atom(env, 
+			strtolower(FANN_ERRORFUNC_NAMES[train_error_func]));
+}
+static ERL_NIF_TERM set_train_error_function_nif(ErlNifEnv* env, 
+						 int argc, 
+						 const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  unsigned int atom_length;
+  int train_error_func;
+  char * error_function;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_atom_length(env, argv[1], &atom_length, ERL_NIF_LATIN1)) {
+    return enif_make_badarg(env);
+  }
+  error_function = malloc((atom_length+1)*sizeof(char));
+  if(!enif_get_atom(env, argv[1], error_function, atom_length+1, 
+		    ERL_NIF_LATIN1)) {
+    free(error_function);
+    return enif_make_badarg(env);
+  }
+  if(!get_error_function(error_function, &train_error_func)) {
+    free(error_function);
+    return enif_make_badarg(env);
+  }
+  free(error_function);
+  fann_set_train_error_function(resource->ann, train_error_func);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_train_stop_function_nif(ErlNifEnv* env, 
+						int argc, 
+						const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  int train_stop_func;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  train_stop_func = fann_get_train_stop_function(resource->ann);
+  return enif_make_atom(env, 
+			strtolower(FANN_STOPFUNC_NAMES[train_stop_func]));
+}
+static ERL_NIF_TERM set_train_stop_function_nif(ErlNifEnv* env, 
+						int argc, 
+						const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  unsigned int atom_length;
+  int train_stop_func;
+  char * stop_function;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_atom_length(env, argv[1], &atom_length, ERL_NIF_LATIN1)) {
+    return enif_make_badarg(env);
+  }
+  stop_function = malloc((atom_length+1)*sizeof(char));
+  if(!enif_get_atom(env, argv[1], stop_function, atom_length+1, 
+		    ERL_NIF_LATIN1)) {
+    free(stop_function);
+    return enif_make_badarg(env);
+  }
+  if(!get_stop_function(stop_function, &train_stop_func)) {
+    free(stop_function);
+    return enif_make_badarg(env);
+  }
+  free(stop_function);
+  fann_set_train_stop_function(resource->ann, train_stop_func);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_bit_fail_limit_nif(ErlNifEnv* env, 
+					   int argc, 
+					   const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  fann_type bit_fail;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  bit_fail = fann_get_bit_fail_limit(resource->ann);
+  return enif_make_double(env, bit_fail);
+}
+
+static ERL_NIF_TERM set_bit_fail_limit_nif(ErlNifEnv* env, 
+					   int argc, 
+					   const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double bit_fail;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &bit_fail)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_bit_fail_limit(resource->ann, (fann_type)bit_fail);
+  return enif_make_atom(env, "ok");
+}
     
 static void * thread_run_fann_train_on_data(void * input_thread_data){
   ErlNifEnv * this_env;
@@ -1248,6 +1359,42 @@ int get_activation_function(char * activation_function, int * act_func) {
     return -1;
   }
 }
+
+int get_error_function(char * error_function, int * err_func) {
+  if(strcmp(error_function,"fann_errorfunc_linear")==0) {
+    *err_func=0;
+    return 0;
+  } else if(strcmp(error_function,"fann_errorfunc_tanh")==0) {
+    *err_func=1;
+    return 0;
+  } else {
+    return -1;
+  }
+}
+
+int get_stop_function(char * stop_function, int * stop_func) {
+  if(strcmp(stop_function,"fann_stopfunc_mse")==0) {
+    *stop_func=0;
+    return 0;
+  } else if(strcmp(stop_function,"fann_stopfunc_bit")==0) {
+    *stop_func=1;
+    return 0;
+  } else {
+    return -1;
+  }
+}
+
+char * strtolower(const char * string) {
+  int i;
+  size_t length;
+  char * temp=NULL;
+  length = strlen(string);
+  strcpy(temp, string);
+  for(i=0; i < length; ++i) {
+    temp[i] = tolower(temp[i]);
+  }
+  return temp;
+}
       
 static ErlNifFunc nif_funcs[] =
 {
@@ -1294,7 +1441,13 @@ static ErlNifFunc nif_funcs[] =
   {"set_activation_steepness", 4, set_activation_steepness_nif},
   {"set_activation_steepness_layer", 3, set_activation_steepness_layer_nif},
   {"set_activation_steepness_hidden", 2, set_activation_steepness_hidden_nif},
-  {"set_activation_steepness_output", 2, set_activation_steepness_output_nif}
+  {"set_activation_steepness_output", 2, set_activation_steepness_output_nif},
+  {"get_train_error_function", 1, get_train_error_function_nif},
+  {"set_train_error_function", 2, set_train_error_function_nif},
+  {"get_train_stop_function", 1, get_train_stop_function_nif},
+  {"set_train_stop_function", 2, set_train_stop_function_nif},
+  {"get_bit_fail_limit", 1, get_bit_fail_limit_nif},
+  {"set_bit_fail_limit", 2, set_bit_fail_limit_nif},
 };
 
 ERL_NIF_INIT(fannerl,nif_funcs,load,reload,upgrade,unload)
