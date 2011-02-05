@@ -26,12 +26,23 @@ struct train_data_thread_data {
   unsigned int max_epochs, epochs_between_reports;
   double desired_error;
   ErlNifPid to_pid;
+  ERL_NIF_TERM reference;
+};
+
+struct train_file_thread_data {
+  struct fann_resource * resource;  
+  char * file_name;
+  unsigned int max_epochs, epochs_between_reports;
+  double desired_error;
+  ErlNifPid to_pid;
+  ERL_NIF_TERM reference;
 };
 
 static fann_type ** global_fann_array_inputs;
 static fann_type ** global_fann_array_outputs;
 
 static void * thread_run_fann_train_on_data(void *);
+static void * thread_run_fann_train_on_file(void *);
 static int get_train_data_from_erl_input(ErlNifEnv *,
 					 ERL_NIF_TERM, 
 					 unsigned int *,
@@ -211,7 +222,10 @@ static ERL_NIF_TERM train_on_file_nif(ErlNifEnv* env, int argc,
   unsigned int string_length, max_epochs, epochs_between_reports;
   char * file_name;
   double desired_error;
-    
+  ErlNifPid self;
+  ERL_NIF_TERM reference;
+  struct train_data_thread * thread_tid;
+  struct train_file_thread_data * thread_data;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
@@ -232,10 +246,28 @@ static ERL_NIF_TERM train_on_file_nif(ErlNifEnv* env, int argc,
     free(file_name);
     return enif_make_badarg(env);
   }
-  fann_train_on_file(resource->ann, file_name, max_epochs, 
-		     epochs_between_reports, desired_error);
+  // make unique reference
+  reference = enif_make_ref(env);
+  // get pid of self
+  enif_self(env, &self);
+  // Initalize thread_tid resource so that the thread will be joined
+  // automatically by the GC
+  thread_tid = enif_alloc_resource(TRAIN_DATA_THREAD, 
+				   sizeof(struct train_data_thread));
+  thread_data = malloc(sizeof(struct train_file_thread_data));
+  // Initialize thread_data struct which will be sent to the thread
+  thread_data->resource = resource;
+  strcpy(thread_data->file_name, file_name); 
   free(file_name);
-  return enif_make_atom(env, "ok");
+  thread_data->max_epochs = max_epochs;
+  thread_data->epochs_between_reports = epochs_between_reports;
+  thread_data->desired_error = desired_error;
+  thread_data->to_pid = self;
+  thread_data->reference = reference;
+  enif_thread_create("train_file_thread", &(thread_tid->tid), 
+		     thread_run_fann_train_on_file, thread_data, NULL);
+  
+  return enif_make_tuple2(env, enif_make_atom(env,"ok"), reference);
 }
 
 static ERL_NIF_TERM get_mse_nif(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
@@ -485,7 +517,7 @@ static ERL_NIF_TERM train_on_data_nif(ErlNifEnv* env,
   struct train_data_thread_data * thread_data;
   struct train_data_resource * train_data_resource;
   ErlNifPid self;
-  
+  ERL_NIF_TERM reference;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }  
@@ -502,7 +534,9 @@ static ERL_NIF_TERM train_on_data_nif(ErlNifEnv* env,
   if(!enif_get_resource(env, argv[1], TRAIN_DATA_RESOURCE, 
 			  (void **)&train_data_resource)) {
     return enif_make_badarg(env);
-  }  
+  }
+  // make unique reference
+  reference = enif_make_ref(env);
   // get pid of self
   enif_self(env, &self);
   // Initalize thread_tid resource so that the thread will be joined
@@ -517,9 +551,10 @@ static ERL_NIF_TERM train_on_data_nif(ErlNifEnv* env,
   thread_data->epochs_between_reports = epochs_between_reports;
   thread_data->desired_error = desired_error;
   thread_data->to_pid = self;
+  thread_data->reference = reference;
   enif_thread_create("train_data_thread", &(thread_tid->tid), 
 		     thread_run_fann_train_on_data, thread_data, NULL);
-  return enif_make_atom(env, "ok");
+  return enif_make_tuple2(env, enif_make_atom(env, "ok"), reference);
 }
 
 static ERL_NIF_TERM create_train_nif(ErlNifEnv* env, 
@@ -1386,8 +1421,8 @@ static ERL_NIF_TERM reset_mse_nif(ErlNifEnv* env,
   return enif_make_atom(env, "ok");
 }
 
-static ERL_NIF_TERM train_epoch_nif(ErlNifEnv* env, 
-				    int argc, 
+static ERL_NIF_TERM train_epoch_nif(ErlNifEnv* env,
+				    int argc,
 				    const ERL_NIF_TERM argv[]) {
   // Need to consider if this should be asynchronous
   struct fann_resource * resource;
@@ -1396,7 +1431,7 @@ static ERL_NIF_TERM train_epoch_nif(ErlNifEnv* env,
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
-  if(!enif_get_resource(env, argv[0], TRAIN_DATA_RESOURCE, 
+  if(!enif_get_resource(env, argv[0], TRAIN_DATA_RESOURCE,
 			(void **)&train_data_resource)) {
     return enif_make_badarg(env);
   }
@@ -1404,7 +1439,7 @@ static ERL_NIF_TERM train_epoch_nif(ErlNifEnv* env,
   return enif_make_double(env, mse);
 }
 
-static ERL_NIF_TERM test_data_nif(ErlNifEnv* env, train_epoch
+static ERL_NIF_TERM test_data_nif(ErlNifEnv* env,
 				  int argc, 
 				  const ERL_NIF_TERM argv[]) {
   // Need to consider if this should be asynchronous
@@ -1432,8 +1467,31 @@ static void * thread_run_fann_train_on_data(void * input_thread_data){
 		     thread_data->epochs_between_reports, 
 		     thread_data->desired_error);
   this_env = enif_alloc_env();
+  enif_send(NULL, &(thread_data->to_pid), this_env,
+	    enif_make_tuple2(this_env,
+			     thread_data->reference,
+			     enif_make_atom(this_env, 
+					    "fann_train_on_data_complete")));
+  free(thread_data);
+  enif_free_env(this_env);
+  enif_thread_exit(NULL); 
+}
+
+static void * thread_run_fann_train_on_file(void * input_thread_data){
+  ErlNifEnv * this_env;
+  struct train_file_thread_data * thread_data;
+  thread_data = (struct train_file_thread_data *)input_thread_data;
+  fann_train_on_file(thread_data->resource->ann, 
+		     thread_data->file_name, 
+		     thread_data->max_epochs, 
+		     thread_data->epochs_between_reports, 
+		     thread_data->desired_error);
+  this_env = enif_alloc_env();
   enif_send(NULL, &(thread_data->to_pid), this_env, 
-	    enif_make_atom(this_env, "fann_train_on_data_complete"));
+	    enif_make_tuple2(this_env,
+			     thread_data->reference,
+			     enif_make_atom(this_env, 
+					    "fann_train_on_file_complete")));
   free(thread_data);
   enif_free_env(this_env);
   enif_thread_exit(NULL); 
