@@ -17,7 +17,13 @@
 	 set_activation_steepness_hidden/2, set_activation_steepness_output/2,
 	 get_train_error_function/1, set_train_error_function/2,
 	 get_train_stop_function/1, set_train_stop_function/2,
-	 get_bit_fail_limit/1, set_bit_fail_limit/2]).
+	 get_bit_fail_limit/1, set_bit_fail_limit/2,	 
+	 get_quickprop_mu/1, set_quickprop_mu/2, 
+	 get_rprop_increase_factor/1, set_rprop_increase_factor/2,
+	 get_rprop_decrease_factor/1, set_rprop_decrease_factor/2,
+	 get_rprop_delta_min/1, set_rprop_delta_min/2,
+	 get_rprop_delta_max/1, set_rprop_delta_max/2,
+	 get_rprop_delta_zero/1, set_rprop_delta_zero/2]).
 
 -on_load(init/0).
 
@@ -174,4 +180,40 @@ get_bit_fail_limit(_) ->
     exit(nif_library_not_loaded).
 
 set_bit_fail_limit(_,_) ->
+    exit(nif_library_not_loaded).
+
+get_quickprop_mu(_) ->
+    exit(nif_library_not_loaded). 
+
+set_quickprop_mu(_,_) ->
+    exit(nif_library_not_loaded).
+
+get_rprop_increase_factor(_) ->
+    exit(nif_library_not_loaded).
+
+set_rprop_increase_factor(_,_) ->
+    exit(nif_library_not_loaded).
+
+get_rprop_decrease_factor(_) ->
+    exit(nif_library_not_loaded).
+
+set_rprop_decrease_factor(_,_) ->
+    exit(nif_library_not_loaded).
+
+get_rprop_delta_min(_)->
+    exit(nif_library_not_loaded).
+
+set_rprop_delta_min(_,_)->
+    exit(nif_library_not_loaded).
+
+get_rprop_delta_max(_)->
+    exit(nif_library_not_loaded).
+
+set_rprop_delta_max(_,_)->
+    exit(nif_library_not_loaded).
+
+get_rprop_delta_zero(_)->
+    exit(nif_library_not_loaded).
+
+set_rprop_delta_zero(_,_)->
     exit(nif_library_not_loaded).

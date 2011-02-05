@@ -1200,6 +1200,283 @@ static ERL_NIF_TERM set_bit_fail_limit_nif(ErlNifEnv* env,
   fann_set_bit_fail_limit(resource->ann, (fann_type)bit_fail);
   return enif_make_atom(env, "ok");
 }
+
+static ERL_NIF_TERM get_quickprop_mu_nif(ErlNifEnv* env, 
+					 int argc, 
+					 const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double quickprop_mu;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  quickprop_mu = fann_get_quickprop_mu(resource->ann);
+  return enif_make_double(env, quickprop_mu);
+}
+
+static ERL_NIF_TERM set_quickprop_mu_nif(ErlNifEnv* env, 
+					   int argc, 
+					   const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double quickprop_mu;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &quickprop_mu)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_quickprop_mu(resource->ann, (float)quickprop_mu);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_rprop_increase_factor_nif(ErlNifEnv* env, 
+						  int argc, 
+						  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_increase;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  rprop_increase = fann_get_rprop_increase_factor(resource->ann);
+  return enif_make_double(env, rprop_increase);
+}
+
+static ERL_NIF_TERM set_rprop_increase_factor_nif(ErlNifEnv* env, 
+						  int argc, 
+						  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_increase;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &rprop_increase)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_rprop_increase_factor(resource->ann, (float)rprop_increase);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_rprop_decrease_factor_nif(ErlNifEnv* env, 
+						  int argc, 
+						  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_decrease;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  rprop_decrease = fann_get_rprop_decrease_factor(resource->ann);
+  return enif_make_double(env, rprop_decrease);
+}
+
+static ERL_NIF_TERM set_rprop_decrease_factor_nif(ErlNifEnv* env, 
+						  int argc, 
+						  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_decrease;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &rprop_decrease)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_rprop_decrease_factor(resource->ann, (float)rprop_decrease);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_rprop_delta_min_nif(ErlNifEnv* env, 
+					    int argc, 
+					    const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_delta;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  rprop_delta = fann_get_rprop_delta_min(resource->ann);
+  return enif_make_double(env, rprop_delta);
+}
+
+static ERL_NIF_TERM set_rprop_delta_min_nif(ErlNifEnv* env, 
+						  int argc, 
+						  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_delta;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &rprop_delta)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_rprop_delta_min(resource->ann, (float)rprop_delta);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_rprop_delta_max_nif(ErlNifEnv* env, 
+					    int argc, 
+					    const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_delta;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  rprop_delta = fann_get_rprop_delta_max(resource->ann);
+  return enif_make_double(env, rprop_delta);
+}
+
+static ERL_NIF_TERM set_rprop_delta_max_nif(ErlNifEnv* env, 
+						  int argc, 
+						  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_delta;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &rprop_delta)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_rprop_delta_max(resource->ann, (float)rprop_delta);
+  return enif_make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM get_rprop_delta_zero_nif(ErlNifEnv* env, 
+					     int argc, 
+					     const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_delta;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  rprop_delta = fann_get_rprop_delta_zero(resource->ann);
+  return enif_make_double(env, rprop_delta);
+}
+
+static ERL_NIF_TERM set_rprop_delta_zero_nif(ErlNifEnv* env, 
+						  int argc, 
+						  const ERL_NIF_TERM argv[]) {
+  struct fann_resource * resource;
+  double rprop_delta;
+  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
+    return enif_make_badarg(env);
+  }
+  if(!enif_get_double(env, argv[1], &rprop_delta)) {
+    return enif_make_badarg(env);
+  }
+  fann_set_rprop_delta_zero(resource->ann, (float)rprop_delta);
+  return enif_make_atom(env, "ok");
+}
+
+/* static ERL_NIF_TERM get_sarprop_weight_decay_shift_nif(ErlNifEnv* env,  */
+/* 						       int argc,  */
+/* 						       const ERL_NIF_TERM argv[]) { */
+/*   struct fann_resource * resource; */
+/*   double sarprop_weight_decay; */
+/*   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   sarprop_weight_decay = fann_get_sarprop_weight_decay_shift(resource->ann); */
+/*   return enif_make_double(env, sarprop_weight_decay); */
+/* } */
+
+/* /\* static ERL_NIF_TERM set_sarprop_weight_decay_shift_nif(ErlNifEnv* env,  *\/ */
+/* 						       int argc,  */
+/* 						       const ERL_NIF_TERM argv[]) { */
+/*   struct fann_resource * resource; */
+/*   double sarprop_weight_decay; */
+/*   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   if(!enif_get_double(env, argv[1], &sarprop_weight_decay)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   fann_set_sarprop_weight_decay_shift(resource->ann,  */
+/* 				      (float)sarprop_weight_decay); */
+/*   return enif_make_atom(env, "ok"); */
+/* } */
+
+/* static ERL_NIF_TERM get_sarprop_step_error_threshold_factor_nif(ErlNifEnv* env,  */
+/* 								int argc,  */
+/* 								const ERL_NIF_TERM argv[]) { */
+/*   struct fann_resource * resource; */
+/*   double sarprop_step_threshold; */
+/*   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   sarprop_step_threshold =  */
+/*     fann_get_sarprop_step_error_threshold_factor(resource->ann); */
+/*   return enif_make_double(env, sarprop_step_threshold); */
+/* } */
+
+/* static ERL_NIF_TERM set_sarprop_step_error_threshold_factor_nif(ErlNifEnv* env,  */
+/* 								int argc,  */
+/* 								const ERL_NIF_TERM argv[]) { */
+/*   struct fann_resource * resource; */
+/*   double sarprop_step_threshold; */
+/*   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   if(!enif_get_double(env, argv[1], &sarprop_step_threshold)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   fann_set_sarprop_step_error_threshold_factor(resource->ann,  */
+/* 					       (float)sarprop_step_threshold); */
+/*   return enif_make_atom(env, "ok"); */
+/* } */
+
+/* static ERL_NIF_TERM get_sarprop_step_error_shift_nif(ErlNifEnv* env,  */
+/* 						     int argc,  */
+/* 						     const ERL_NIF_TERM argv[]) { */
+/*   struct fann_resource * resource; */
+/*   double sarprop_step_error_shift; */
+/*   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   sarprop_step_error_shift =  */
+/*     fann_get_sarprop_step_error_shift(resource->ann); */
+/*   return enif_make_double(env, sarprop_step_error_shift); */
+/* } */
+
+/* static ERL_NIF_TERM set_sarprop_step_error_shift_nif(ErlNifEnv* env,  */
+/* 							 int argc,  */
+/* 							 const ERL_NIF_TERM argv[]) { */
+/*   struct fann_resource * resource; */
+/*   double sarprop_step_error_shift; */
+/*   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   if(!enif_get_double(env, argv[1], &sarprop_step_error_shift)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   fann_set_sarprop_step_error_shift(resource->ann,  */
+/* 				    (float)sarprop_step_error_shift); */
+/*   return enif_make_atom(env, "ok"); */
+/* } */
+
+/* static ERL_NIF_TERM get_sarprop_temperature_nif(ErlNifEnv* env,  */
+/* 						int argc,  */
+/* 						const ERL_NIF_TERM argv[]) { */
+/*   struct fann_resource * resource; */
+/*   double sarprop_temperature; */
+/*   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   sarprop_temperature =  */
+/*     fann_get_sarprop_temperature(resource->ann); */
+/*   return enif_make_double(env, sarprop_temperature); */
+/* } */
+
+/* static ERL_NIF_TERM set_sarprop_temperature_nif(ErlNifEnv* env,  */
+/* 						int argc,  */
+/* 						const ERL_NIF_TERM argv[]) { */
+/*   struct fann_resource * resource; */
+/*   double sarprop_temperature; */
+/*   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   if(!enif_get_double(env, argv[1], &sarprop_temperature)) { */
+/*     return enif_make_badarg(env); */
+/*   } */
+/*   fann_set_sarprop_temperature(resource->ann,  */
+/* 			       (float)sarprop_temperature); */
+/*   return enif_make_atom(env, "ok"); */
+/* } */
     
 static void * thread_run_fann_train_on_data(void * input_thread_data){
   ErlNifEnv * this_env;
@@ -1448,6 +1725,18 @@ static ErlNifFunc nif_funcs[] =
   {"set_train_stop_function", 2, set_train_stop_function_nif},
   {"get_bit_fail_limit", 1, get_bit_fail_limit_nif},
   {"set_bit_fail_limit", 2, set_bit_fail_limit_nif},
+  {"get_quickprop_mu", 1, get_quickprop_mu_nif},
+  {"set_quickprop_mu", 2, set_quickprop_mu_nif},
+  {"get_rprop_increase_factor", 1, get_rprop_increase_factor_nif},
+  {"set_rprop_increase_factor", 2, set_rprop_increase_factor_nif},
+  {"get_rprop_decrease_factor", 1, get_rprop_decrease_factor_nif},
+  {"set_rprop_decrease_factor", 2, set_rprop_decrease_factor_nif},
+  {"get_rprop_delta_min", 1, get_rprop_delta_min_nif},
+  {"set_rprop_delta_min", 2, set_rprop_delta_min_nif},
+  {"get_rprop_delta_max", 1, get_rprop_delta_max_nif},
+  {"set_rprop_delta_max", 2, set_rprop_delta_max_nif},
+  {"get_rprop_delta_zero", 1, get_rprop_delta_zero_nif},
+  {"set_rprop_delta_zero", 2, set_rprop_delta_zero_nif}
 };
 
 ERL_NIF_INIT(fannerl,nif_funcs,load,reload,upgrade,unload)
