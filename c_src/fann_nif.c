@@ -1404,7 +1404,7 @@ static ERL_NIF_TERM train_epoch_nif(ErlNifEnv* env,
   return enif_make_double(env, mse);
 }
 
-static ERL_NIF_TERM test_data_nif(ErlNifEnv* env, 
+static ERL_NIF_TERM test_data_nif(ErlNifEnv* env, train_epoch
 				  int argc, 
 				  const ERL_NIF_TERM argv[]) {
   // Need to consider if this should be asynchronous
@@ -1682,7 +1682,9 @@ static ErlNifFunc nif_funcs[] =
   {"get_rprop_delta_zero", 1, get_rprop_delta_zero_nif},
   {"set_rprop_delta_zero", 2, set_rprop_delta_zero_nif},
   {"get_bit_fail", 1, get_bit_fail_nif},
-  {"reset_mse", 1, reset_mse_nif}
+  {"reset_mse", 1, reset_mse_nif},
+  {"train_epoch", 2, train_epoch_nif},
+  {"test_data", 2, test_data_nif},
 };
 
 ERL_NIF_INIT(fannerl,nif_funcs,load,reload,upgrade,unload)

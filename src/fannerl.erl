@@ -24,7 +24,7 @@
 	 get_rprop_delta_min/1, set_rprop_delta_min/2,
 	 get_rprop_delta_max/1, set_rprop_delta_max/2,
 	 get_rprop_delta_zero/1, set_rprop_delta_zero/2,
-	 get_bit_fail/1, reset_mse/1]).
+	 get_bit_fail/1, reset_mse/1, train_epoch/2, test_data/2]).
 
 -on_load(init/0).
 
@@ -223,4 +223,10 @@ get_bit_fail(_) ->
     exit(nif_library_not_loaded). 
 
 reset_mse(_) ->
+    exit(nif_library_not_loaded).
+
+train_epoch(_,_) ->
+    exit(nif_library_not_loaded).
+
+test_data(_,_) ->
     exit(nif_library_not_loaded).
