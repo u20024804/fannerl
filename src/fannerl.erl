@@ -23,7 +23,8 @@
 	 get_rprop_decrease_factor/1, set_rprop_decrease_factor/2,
 	 get_rprop_delta_min/1, set_rprop_delta_min/2,
 	 get_rprop_delta_max/1, set_rprop_delta_max/2,
-	 get_rprop_delta_zero/1, set_rprop_delta_zero/2]).
+	 get_rprop_delta_zero/1, set_rprop_delta_zero/2,
+	 get_bit_fail/1, reset_mse/1]).
 
 -on_load(init/0).
 
@@ -200,20 +201,26 @@ get_rprop_decrease_factor(_) ->
 set_rprop_decrease_factor(_,_) ->
     exit(nif_library_not_loaded).
 
-get_rprop_delta_min(_)->
+get_rprop_delta_min(_) ->
     exit(nif_library_not_loaded).
 
-set_rprop_delta_min(_,_)->
+set_rprop_delta_min(_,_) ->
     exit(nif_library_not_loaded).
 
-get_rprop_delta_max(_)->
+get_rprop_delta_max(_) ->
     exit(nif_library_not_loaded).
 
-set_rprop_delta_max(_,_)->
+set_rprop_delta_max(_,_) ->
     exit(nif_library_not_loaded).
 
-get_rprop_delta_zero(_)->
+get_rprop_delta_zero(_) ->
     exit(nif_library_not_loaded).
 
-set_rprop_delta_zero(_,_)->
+set_rprop_delta_zero(_,_) ->
+    exit(nif_library_not_loaded).
+
+get_bit_fail(_) ->
+    exit(nif_library_not_loaded). 
+
+reset_mse(_) ->
     exit(nif_library_not_loaded).
