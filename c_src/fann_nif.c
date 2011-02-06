@@ -304,18 +304,6 @@ static ERL_NIF_TERM save_nif(ErlNifEnv* env, int argc,
   return enif_make_atom(env, "ok");
 }
 
-static ERL_NIF_TERM destroy_nif(ErlNifEnv* env, int argc, 
-			     const ERL_NIF_TERM argv[]) {
-  struct fann_resource * resource;
-    
-  if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
-    return enif_make_badarg(env);
-  }
-  fann_destroy(resource->ann);
-  enif_release_resource(resource);
-  return enif_make_atom(env, "ok");
-}
-
 static ERL_NIF_TERM set_activation_function_hidden_nif(ErlNifEnv* env, 
 						       int argc, 
 						       const ERL_NIF_TERM argv[]) {
@@ -378,7 +366,8 @@ static ERL_NIF_TERM get_activation_function_nif(ErlNifEnv* env,
 						const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
   unsigned int activation_function, layer, neuron;
-      
+  char * temp;
+  ERL_NIF_TERM result;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
@@ -391,7 +380,9 @@ static ERL_NIF_TERM get_activation_function_nif(ErlNifEnv* env,
   activation_function = fann_get_activation_function(resource->ann, layer,
 						     neuron);
   if(activation_function != -1) {
-    return enif_make_atom(env, FANN_ACTIVATIONFUNC_NAMES[activation_function]);
+    temp = strtolower(FANN_ACTIVATIONFUNC_NAMES[activation_function]);
+    result = enif_make_atom(env, temp);
+    return result;
   } else {
     return enif_make_atom(env, "neuron_does_not_exist");
   }
@@ -1134,12 +1125,16 @@ static ERL_NIF_TERM get_train_error_function_nif(ErlNifEnv* env,
 						 const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
   int train_error_func;
+  char * temp;
+  ERL_NIF_TERM result;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
   train_error_func = fann_get_train_error_function(resource->ann);
-  return enif_make_atom(env, 
-			strtolower(FANN_ERRORFUNC_NAMES[train_error_func]));
+  temp = strtolower(FANN_ERRORFUNC_NAMES[train_error_func]);
+  result = enif_make_atom(env, temp);
+  free(temp);
+  return result;
 }
 static ERL_NIF_TERM set_train_error_function_nif(ErlNifEnv* env, 
 						 int argc, 
@@ -1174,12 +1169,16 @@ static ERL_NIF_TERM get_train_stop_function_nif(ErlNifEnv* env,
 						const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
   int train_stop_func;
+  char * temp=NULL;
+  ERL_NIF_TERM result;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
   train_stop_func = fann_get_train_stop_function(resource->ann);
-  return enif_make_atom(env, 
-			strtolower(FANN_STOPFUNC_NAMES[train_stop_func]));
+  temp = strtolower(FANN_STOPFUNC_NAMES[train_stop_func]);
+  result = enif_make_atom(env,temp);
+  //free(temp);
+  return result;
 }
 static ERL_NIF_TERM set_train_stop_function_nif(ErlNifEnv* env, 
 						int argc, 
@@ -1668,6 +1667,7 @@ char * strtolower(const char * string) {
   size_t length;
   char * temp=NULL;
   length = strlen(string);
+  temp=malloc(length*sizeof(char));
   strcpy(temp, string);
   for(i=0; i < length; ++i) {
     temp[i] = tolower(temp[i]);
@@ -1681,7 +1681,6 @@ static ErlNifFunc nif_funcs[] =
   {"train_on_file", 5, train_on_file_nif},
   {"get_mse", 1, get_mse_nif},
   {"save", 2, save_nif},
-  {"destroy", 1, destroy_nif},
   {"set_activation_function_hidden", 2, set_activation_function_hidden_nif},
   {"set_activation_function_output", 2, set_activation_function_output_nif},
   {"get_activation_function", 3, get_activation_function_nif},

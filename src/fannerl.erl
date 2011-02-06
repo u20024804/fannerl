@@ -1,6 +1,6 @@
 -module(fannerl).
 
--export([create_standard/1, train_on_file/5, get_mse/1, save/2, destroy/1,
+-export([create_standard/1, train_on_file/5, get_mse/1, save/2,
 	 set_activation_function_hidden/2, set_activation_function_output/2,
 	 get_activation_function/3, print_parameters/1, print_connections/1,
 	 run/2, test/3, randomize_weights/3, train_on_data/5, create_train/1,
@@ -11,7 +11,7 @@
 	 subset_train_data/3, num_input_train_data/1, num_output_train_data/1,
 	 save_train/2, get_training_algorithm/1, set_training_algorithm/2,
 	 get_learning_rate/1, set_learning_rate/2, get_learning_momentum/1,
-	 set_learning_momentum/2, length_train_data/1, 
+	 set_learning_momentum/2, length_train_data/1,  
 	 set_activation_function_layer/3, get_activation_steepness/3,
 	 set_activation_steepness/4, set_activation_steepness_layer/3,
 	 set_activation_steepness_hidden/2, set_activation_steepness_output/2,
@@ -24,7 +24,8 @@
 	 get_rprop_delta_min/1, set_rprop_delta_min/2,
 	 get_rprop_delta_max/1, set_rprop_delta_max/2,
 	 get_rprop_delta_zero/1, set_rprop_delta_zero/2,
-	 get_bit_fail/1, reset_mse/1, train_epoch/2, test_data/2]).
+	 get_bit_fail/1, reset_mse/1, train_epoch/2, test_data/2, 
+	 set_activation_function/4]).
 
 -on_load(init/0).
 
@@ -49,13 +50,13 @@ get_mse(_) ->
 save(_,_) ->
     exit(nif_library_not_loaded).
 
-destroy(_) ->
-    exit(nif_library_not_loaded).
-
 set_activation_function_hidden(_,_) ->
     exit(nif_library_not_loaded).
 
 set_activation_function_output(_,_) ->
+    exit(nif_library_not_loaded).
+
+set_activation_function(_,_,_,_) ->
     exit(nif_library_not_loaded).
 
 get_activation_function(_,_,_) ->
