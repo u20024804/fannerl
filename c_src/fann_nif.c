@@ -126,6 +126,7 @@ void convert_to_erl_nif_array_from_fann_type(ErlNifEnv* env,
 }
 
 static void destroy_fann_pointer(ErlNifEnv * env, void * resource) {
+  printf("Destroy the fann pointer\n");
   fann_destroy(((struct fann_resource *) resource)->ann);
 }
 
@@ -913,6 +914,7 @@ static ERL_NIF_TERM get_learning_rate_nif(ErlNifEnv* env,
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
+  printf("testing to see if we get here\n");
   learning_rate = fann_get_learning_rate(resource->ann);
   return enif_make_double(env, learning_rate);
 }
@@ -1587,78 +1589,78 @@ static int get_train_data_from_erl_input(ErlNifEnv * env,
 int get_activation_function(char * activation_function, int * act_func) {
   if(strcmp(activation_function,"fann_linear")==0) {
     *act_func=0;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_threshold")==0) {
     *act_func=1;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_threshold_symmetric")==0) {
     *act_func=2;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_sigmoid")==0) {
     *act_func=3;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_sigmoid_stepwise")==0) {
     *act_func=4;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_sigmoid_symmetric")==0) {
     *act_func=5;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_gaussian")==0) {
     *act_func=6;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_gaussian_symmetric")==0) {
     *act_func=7;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_elliot")==0) {
     *act_func=8;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_elliot_symmetric")==0) {
     *act_func=9;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_linear_piece")==0) {
     *act_func=10;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_linear_piece_symmetric")==0) {
     *act_func=11;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_sin_symmetric")==0) {
     *act_func=12;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_cos_symmetric")==0) {
     *act_func=13;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_sin")==0) {
     *act_func=14;
-    return 0;
+    return 1;
   } else if(strcmp(activation_function,"fann_cos")==0) {
     *act_func=15;
-    return 0;
+    return 1;
   } else {
-    return -1;
+    return 0;
   }
 }
 
 int get_error_function(char * error_function, int * err_func) {
   if(strcmp(error_function,"fann_errorfunc_linear")==0) {
     *err_func=0;
-    return 0;
+    return 1;
   } else if(strcmp(error_function,"fann_errorfunc_tanh")==0) {
     *err_func=1;
-    return 0;
+    return 1;
   } else {
-    return -1;
+    return 0;
   }
 }
 
 int get_stop_function(char * stop_function, int * stop_func) {
   if(strcmp(stop_function,"fann_stopfunc_mse")==0) {
     *stop_func=0;
-    return 0;
+    return 1;
   } else if(strcmp(stop_function,"fann_stopfunc_bit")==0) {
     *stop_func=1;
-    return 0;
+    return 1;
   } else {
-    return -1;
+    return 0;
   }
 }
 
