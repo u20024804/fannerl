@@ -930,7 +930,6 @@ static ERL_NIF_TERM get_learning_rate_nif(ErlNifEnv* env,
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
-  printf("testing to see if we get here\n");
   learning_rate = fann_get_learning_rate(resource->ann);
   return enif_make_double(env, learning_rate);
 }
