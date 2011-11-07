@@ -1,3 +1,12 @@
+/* fannerl (c) by Erik Axling
+
+ fannerl is licensed under a
+ Creative Commons Attribution-ShareAlike 3.0 Unported License.
+
+ You should have received a copy of the license along with this
+ work.  If not, see <http://creativecommons.org/licenses/by-sa/3.0/>.
+*/
+
 #include <erl_nif.h>
 #include <fann.h>
 #include <string.h>
@@ -126,7 +135,8 @@ void convert_to_erl_nif_array_from_fann_type(ErlNifEnv* env,
 }
 
 static void destroy_fann_pointer(ErlNifEnv * env, void * resource) {
-  printf("Destroy the fann pointer\n");
+  printf("Ann pointer at destroy: %i\nResource pointer at destroy: %i\n", 
+	 ((struct fann_resource *) resource)->ann, (int)resource);
   fann_destroy(((struct fann_resource *) resource)->ann);
 }
 
@@ -169,15 +179,18 @@ static int load(ErlNifEnv * env, void ** priv_data, ERL_NIF_TERM load_info){
 }
 
 static int reload(ErlNifEnv * env, void ** priv_data, ERL_NIF_TERM load_info) {
+  printf("reload!\n");
   return 0;
 }
 
 static int upgrade(ErlNifEnv * env, void ** priv_data, void ** old_priv_data, 
 		   ERL_NIF_TERM load_info) {
+  printf("upgrade!\n");
   return 0;
 }
 
 static int unload(ErlNifEnv * env, void ** priv_data) {
+  printf("unload\n");
   return 0;
 }  
 
@@ -195,7 +208,8 @@ static ERL_NIF_TERM create_standard_nif(ErlNifEnv* env, int argc,
     if(check_and_convert_uint_array(env, tuple_array, tuple_size, 
 				    converted_array)) {
       resource->ann = fann_create_standard_array(tuple_size, 
-				       converted_array);
+						 converted_array);
+      printf("ann pointer: %i\n", (int)resource->ann);
       if(converted_array!=NULL) {
 	free(converted_array);
 	converted_array=NULL;
@@ -366,23 +380,25 @@ static ERL_NIF_TERM get_activation_function_nif(ErlNifEnv* env,
 						int argc, 
 						const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
-  unsigned int activation_function, layer, neuron;
+  unsigned int length;
+  int activation_function, layer, neuron;
   char * temp;
   ERL_NIF_TERM result;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
-  if(!enif_get_uint(env, argv[1], &layer)) {
+  if(!enif_get_int(env, argv[1], &layer)) {
     return enif_make_badarg(env);
   }
-  if(!enif_get_uint(env, argv[1], &neuron)) {
+  if(!enif_get_int(env, argv[2], &neuron)) {
     return enif_make_badarg(env);
-  }  
+  }
   activation_function = fann_get_activation_function(resource->ann, layer,
 						     neuron);
   if(activation_function != -1) {
     temp = strtolower(FANN_ACTIVATIONFUNC_NAMES[activation_function]);
-    result = enif_make_atom(env, temp);
+    length = strlen(temp);
+    result = enif_make_atom_len(env, temp, length);
     return result;
   } else {
     return enif_make_atom(env, "neuron_does_not_exist");
@@ -966,8 +982,8 @@ static ERL_NIF_TERM set_activation_function_nif(ErlNifEnv* env,
 						const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
   char * activation_function;
-  int act_func;
-  unsigned int atom_length, layer, neuron;
+  int act_func, layer, neuron;
+  unsigned int atom_length;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
@@ -980,17 +996,19 @@ static ERL_NIF_TERM set_activation_function_nif(ErlNifEnv* env,
     free(activation_function);
     return enif_make_badarg(env);
   }
+  
   if(!get_activation_function(activation_function, &act_func)) {
     free(activation_function);
     return enif_make_badarg(env);
   }
+  
   free(activation_function);
-  if(!enif_get_uint(env, argv[2], &layer)) {
+  if(!enif_get_int(env, argv[2], &layer)) {
     return enif_make_badarg(env);
   }
-  if(!enif_get_uint(env, argv[2], &neuron)) {
+  if(!enif_get_int(env, argv[3], &neuron)) {
     return enif_make_badarg(env);
-  }
+  }  
   fann_set_activation_function(resource->ann, act_func, layer, neuron);
   return enif_make_atom(env, "ok");
 }
@@ -1000,8 +1018,8 @@ static ERL_NIF_TERM set_activation_function_layer_nif(ErlNifEnv* env,
 						      const ERL_NIF_TERM argv[]) {
   struct fann_resource * resource;
   char * activation_function;
-  int act_func;
-  unsigned int atom_length, layer;
+  int act_func, layer;
+  unsigned int atom_length;
   if(!enif_get_resource(env, argv[0], FANN_POINTER, (void **)&resource)) {
     return enif_make_badarg(env);
   }
@@ -1019,7 +1037,7 @@ static ERL_NIF_TERM set_activation_function_layer_nif(ErlNifEnv* env,
     return enif_make_badarg(env);
   }
   free(activation_function);
-  if(!enif_get_uint(env, argv[2], &layer)) {
+  if(!enif_get_int(env, argv[2], &layer)) {
     return enif_make_badarg(env);
   }
   fann_set_activation_function_layer(resource->ann, act_func, layer);
@@ -1179,7 +1197,6 @@ static ERL_NIF_TERM get_train_stop_function_nif(ErlNifEnv* env,
   train_stop_func = fann_get_train_stop_function(resource->ann);
   temp = strtolower(FANN_STOPFUNC_NAMES[train_stop_func]);
   result = enif_make_atom(env,temp);
-  //free(temp);
   return result;
 }
 static ERL_NIF_TERM set_train_stop_function_nif(ErlNifEnv* env, 

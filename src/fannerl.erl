@@ -1,3 +1,11 @@
+%% fannerl (c) by Erik Axling
+%%
+%% fannerl is licensed under a
+%% Creative Commons Attribution-ShareAlike 3.0 Unported License.
+%%
+%% You should have received a copy of the license along with this
+%% work.  If not, see <http://creativecommons.org/licenses/by-sa/3.0/>.
+
 -module(fannerl).
 
 -export([create_standard/1, train_on_file/5, get_mse/1, save/2,
