@@ -137,7 +137,10 @@ void convert_to_erl_nif_array_from_fann_type(ErlNifEnv* env,
 static void destroy_fann_pointer(ErlNifEnv * env, void * resource) {
   printf("Ann pointer at destroy: %i\nResource pointer at destroy: %i\n", 
 	 ((struct fann_resource *) resource)->ann, (int)resource);
-  fann_destroy(((struct fann_resource *) resource)->ann);
+  if(((struct fann_resource *) resource)->ann != NULL) {
+    fann_destroy(((struct fann_resource *) resource)->ann);
+    ((struct fann_resource *) resource)->ann = NULL;
+  }
 }
 
 static void destroy_train_data_thread(ErlNifEnv * env, void * resource) {
@@ -396,6 +399,7 @@ static ERL_NIF_TERM get_activation_function_nif(ErlNifEnv* env,
   activation_function = fann_get_activation_function(resource->ann, layer,
 						     neuron);
   if(activation_function != -1) {
+    printf("Activation function = %i\n", activation_function);
     temp = strtolower(FANN_ACTIVATIONFUNC_NAMES[activation_function]);
     length = strlen(temp);
     result = enif_make_atom_len(env, temp, length);
@@ -999,8 +1003,7 @@ static ERL_NIF_TERM set_activation_function_nif(ErlNifEnv* env,
   if(!get_activation_function(activation_function, &act_func)) {
     free(activation_function);
     return enif_make_badarg(env);
-  }
-  
+  }  
   free(activation_function);
   if(!enif_get_int(env, argv[2], &layer)) {
     return enif_make_badarg(env);
@@ -1621,35 +1624,41 @@ int get_activation_function(char * activation_function, int * act_func) {
   } else if(strcmp(activation_function,"fann_sigmoid_symmetric")==0) {
     *act_func=5;
     return 1;
-  } else if(strcmp(activation_function,"fann_gaussian")==0) {
+  } else if(strcmp(activation_function,"fann_sigmoid_symmetric_stepwise")==0) {
     *act_func=6;
     return 1;
-  } else if(strcmp(activation_function,"fann_gaussian_symmetric")==0) {
+  } else if(strcmp(activation_function,"fann_gaussian")==0) {
     *act_func=7;
     return 1;
-  } else if(strcmp(activation_function,"fann_elliot")==0) {
+  } else if(strcmp(activation_function,"fann_gaussian_symmetric")==0) {
     *act_func=8;
     return 1;
-  } else if(strcmp(activation_function,"fann_elliot_symmetric")==0) {
+  } else if(strcmp(activation_function,"fann_gaussian_stepwise")==0) {
     *act_func=9;
     return 1;
-  } else if(strcmp(activation_function,"fann_linear_piece")==0) {
+  } else if(strcmp(activation_function,"fann_elliot")==0) {
     *act_func=10;
     return 1;
-  } else if(strcmp(activation_function,"fann_linear_piece_symmetric")==0) {
+  } else if(strcmp(activation_function,"fann_elliot_symmetric")==0) {
     *act_func=11;
     return 1;
-  } else if(strcmp(activation_function,"fann_sin_symmetric")==0) {
+  } else if(strcmp(activation_function,"fann_linear_piece")==0) {
     *act_func=12;
     return 1;
-  } else if(strcmp(activation_function,"fann_cos_symmetric")==0) {
+  } else if(strcmp(activation_function,"fann_linear_piece_symmetric")==0) {
     *act_func=13;
     return 1;
-  } else if(strcmp(activation_function,"fann_sin")==0) {
+  } else if(strcmp(activation_function,"fann_sin_symmetric")==0) {
     *act_func=14;
     return 1;
-  } else if(strcmp(activation_function,"fann_cos")==0) {
+  } else if(strcmp(activation_function,"fann_cos_symmetric")==0) {
     *act_func=15;
+    return 1;
+  } else if(strcmp(activation_function,"fann_sin")==0) {
+    *act_func=16;
+    return 1;
+  } else if(strcmp(activation_function,"fann_cos")==0) {
+    *act_func=17;
     return 1;
   } else {
     return 0;

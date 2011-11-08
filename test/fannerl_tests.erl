@@ -17,12 +17,15 @@ get_mse_test() ->
 activation_function_test() ->
     Fann = fannerl:create_standard({2,2,1}),
     fann_sigmoid_stepwise = fannerl:get_activation_function(Fann, 1, 1),
-    fannerl:print_connections(Fann),
+    ok = fannerl:set_activation_function(Fann, fann_elliot, 1, 1),
+    fann_elliot = fannerl:get_activation_function(Fann, 1, 1),
     ok = fannerl:set_activation_function(Fann, fann_sigmoid, 1, 1),
-    ?debugMsg("before last get"),
-    fannerl:print_connections(Fann),
-    fann_sigmoid = fannerl:get_activation_function(Fann, 1, 1),
-    ?debugMsg("after last get"),
-    0.7=fannerl:get_learning_rate(Fann),
-    ?debugMsg("exiting last test").
+    fann_sigmoid = fannerl:get_activation_function(Fann, 1, 1).
+
     
+
+failing_segment_fault_test() ->
+    Fann = fannerl:create_standard({2,2,1}),
+    fann_sigmoid_stepwise = fannerl:get_activation_function(Fann, 1, 1),
+    ok = fannerl:set_activation_function(Fann, fann_sigmoid, 1, 1),
+    fann_sigmoid = fannerl:get_activation_function(Fann, 1, 1).
